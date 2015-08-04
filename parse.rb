@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
 body = ''
-rx = /<%\s*update-note(\((.*)\))?(.*)%>/m
+rx = /<%\s*release-note(\((.*)\))?(.*)%>/m
 
 match = rx.match(STDIN.read)
 

@@ -10,7 +10,7 @@ E.g
 
 [Finishes #2323242] Added recommended quantities
 
-<% update-note
+<% release-note
 
 \# What's New
 
@@ -19,13 +19,13 @@ can be found in Admin section, under Inventory Dropdown
 
 %>
 
-2. When a deployment is done, the script will read all new commit messages for the deployment and extracts update-notes.
+2. When a deployment is done, the script will read all new commit messages for the deployment and extracts release-note tags.
 
 
 Update note extraction ->
 
 
-3. The content of the update-note, along with the SHA would be saved in the database. (API? Authentication?)
+3. The content of the release-note, would appended to the current release-notes.md file. (API? Authentication?)
 SHA would be a unique field.
 
 4. Each deployment would have a version string.
