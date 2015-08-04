@@ -1,4 +1,4 @@
-# Update notices workbook
+# Release notes system workbook
 
 ## Abstract
 
