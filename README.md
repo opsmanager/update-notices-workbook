@@ -44,7 +44,7 @@ You can provide contextual tags to your upgrade note (to make grouping
 of notes easier, during the editorial process.) using the syntax:
 
 ```
-<% upgrade-note(ddr, timesheets, finance, ...)
+<% release-note(ddr, timesheets, finance, ...)
 ```
 
 The default ordering of upgrade-notes
