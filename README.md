@@ -3,7 +3,7 @@
 ## Abstract
 
 In this document we will define the process and patterns used to
-generate, parse and curate user application update messages.
+generate, parse and curate user application release notes.
 
 ## Commit Message Integration
 
@@ -12,7 +12,7 @@ Commit messages provide a simple, contextual way to create notes for update mess
 ```
 <% release-note
 
-Update note here in plain text.
+Release note here in plain text.
 
 %>
 ```
