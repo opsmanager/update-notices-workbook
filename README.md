@@ -51,7 +51,7 @@ The default ordering of upgrade-notes
 
 ## Parsing
 
-Rake task `release-notes:parse` parses the current commit log up to a given commit sha, and produces text output of:
+Script task `release-notes-parser` parses the current commit logs from a given commit sha to the HEAD, and produces text output of:
 
 * Extracted release-notes content
 * _Finishes_ commit messages
