@@ -53,7 +53,7 @@ The default ordering of upgrade-notes
 
 Rake task `release-notes:parse` parses the current commit log up to a given commit sha, and produces text output of:
 
-* Update notes
+* Extracted release-notes content
 * _Finishes_ commit messages
 * _Hotfix_ commit messages
 
