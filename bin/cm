@@ -1,12 +1,24 @@
 #!/usr/bin/env ruby
-require "rubygems" # ruby1.9 doesn't "require" it though
-require "thor"
 
-class MyThorCommand < Thor
-  desc "foo", "Prints foo"
-  def foo
-    puts "foo"
+begin
+  require "thor"
+rescue
+  puts "Thor is required, please install it."
+  puts "gem install thor"
+end
+
+class ReleaseNotesParser < Thor
+  package_name "ReleaseNoteParser"
+
+  desc "list", "List all release notes"
+  method_option :tags, :banner => "Specify tags"
+  def list
+    if options.tags?
+      puts "I am listing all release notes with the following tags: #{options.tags}"
+    else
+      puts "I am listing all release notes"
+    end
   end
 end
 
-MyThorCommand.start
+ReleaseNotesParser.start
