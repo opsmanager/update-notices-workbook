@@ -1,0 +1,117 @@
+#!/usr/bin/env ruby
+# coding: utf-8
+
+def friendly_require package
+  begin
+    require package
+  rescue
+    puts "#{package} is required, please install it."
+    puts "gem install #{package}"
+  end
+end
+
+friendly_require 'git'
+friendly_require 'json'
+friendly_require 'ostruct'
+friendly_require 'pry-byebug'
+friendly_require 'thor'
+friendly_require 'ostruct'
+
+class Array
+
+  def blank_line
+    self.join("\n\n")
+  end
+
+  def hr
+    self.join("\n\n* * *\n\n")
+  end
+
+end
+
+class ReleaseLog
+
+  attr_accessor :log
+
+  def processed_log options = nil
+    unless options
+      @processed
+    else
+      @processed
+    end
+  end
+
+  def initialize json_log
+    @log = JSON.parse(json_log)
+    rx = /<%\s*release-note(\((.*?)\))?\s*(.*?)%>/m
+    @processed = @log.map { |l| OpenStruct.new({scans: l["b"].scan(rx), sha: l["sha"], time: l["t"]}) }
+      .reject { |o| o.scans.empty? }
+      .each { |o| make_release_notes o }
+  end
+
+  private
+
+  def make_release_notes o
+    o.release_notes = o.scans.map {|n| OpenStruct.new({note: n[2], tags: (n[1].split(',') rescue [])})}
+  end
+
+end
+
+class ReleaseNotesParser < Thor
+
+  def initialize(args = [], local_options = {}, config = {})
+    super args, local_options, config
+    @repo_path = File.join(File.realdirpath(File.dirname(__FILE__)), "..") # TODO: Override from option? ...
+    @g = Git::open @repo_path
+  end
+
+  package_name "Release notes parser"
+
+  desc "list", "List all release notes from git log"
+  method_option :sha, banner: "Specify the SHA of the starting commit (parses log from SHA to HEAD on current branch)", required: true
+  method_option :show_time, banner: "List release notes with SHA1 & time of commit", type: :boolean
+  method_option :show_tags, banner: "List release notes showing their tags", type: :boolean
+  method_option :meta_tags, banner: "Specify a comma separated list of release note meta-tags to be included. See README for details"
+  # method_option :finishes, type: :boolean, banner: "list notes with a [Finishes] commit"
+  # method_option :hotfixes, type: :boolean, banner: "list notes with a [Hotfix] commit"
+  def list
+    # if options.finishes?
+    # end
+
+    # if options.hotfixes?
+    # end
+
+    puts "    Listing release notes (#{options.sha} => HEAD)\n"
+    @log = get_log(options.sha)
+    puts @log.processed_log(options).map{ |l|
+      out = []
+      if options.show_time?
+        out.push "    sha: #{l.sha} / time: #{DateTime.strptime(l.time,'%s')}`\n\n"
+      end
+      if options.show_tags?
+        out.push l.release_notes.map{|i|
+          rn = []
+          rn.push "**tags:** _#{i.tags.join(', ')}_" unless i.tags.empty?
+          rn.push i.note
+          rn.blank_line
+        }.hr
+      else
+        out.push l.release_notes.map(&:note).hr
+      end
+    }.hr
+  end
+
+  private
+
+  # execute git command on --git-dir
+  def gitcmd(cmd)
+    %x(git --git-dir=#{@repo_path}/.git #{cmd})
+  end
+
+  def get_log(a, b = 'HEAD')
+    ReleaseLog.new("[#{gitcmd(%Q(log #{a}..#{b} --pretty=format:"{\\\"sha\\\":\\\"%h\\\",\\\"t\\\":\\\"%at\\\",\\\"b\\\":\\\"%B\\\"},"))[0..-2].gsub("},\n{","},{").gsub("\n",'\\n')}]")
+  end
+
+end
+
+ReleaseNotesParser.start
