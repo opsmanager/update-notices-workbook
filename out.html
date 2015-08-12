@@ -1,0 +1,49 @@
+<link rel="stylesheet" href="git.css"/>
+<h1>Listing release notes (6805b92 =&gt; HEAD)</h1>
+
+<hr>
+
+<p>Use rnparse help [COMMAND] to get help </p>
+
+<hr>
+
+<p>Map options to a class. Simply create a class with the appropriate
+annotations and have options automatically map to functions and
+parameters.</p>
+
+<pre><code>class App &lt; Thor
+  package_name &quot;App&quot;
+  map &quot;-L&quot; =&gt; :list
+
+  desc &quot;install APP_NAME&quot;, &quot;install one of the available apps&quot;
+  method_options :force =&gt; :boolean, :alias =&gt; :string
+  def install(name)
+    user_alias = options[:alias]
+    if options.force?
+      # do something
+    end
+    # other code
+  end
+
+  desc &quot;list [SEARCH]&quot;, &quot;list all of the available apps, limited by SEARCH&quot;
+  def list(search=&quot;&quot;)
+    # list everything
+  end
+end
+</code></pre>
+
+<hr>
+
+<h1>My Title</h1>
+
+<p>A release note relating to this feature/story, it could be one of many.</p>
+
+<p>This one is tagged, as &#39;note&#39;</p>
+
+<hr>
+
+<p>this is, and has no tag </p>
+
+<hr>
+
+<p>this is, and has support and faq tags </p>

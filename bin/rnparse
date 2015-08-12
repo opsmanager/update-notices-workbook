@@ -44,7 +44,7 @@ class ReleaseLog
   def get options = nil
     if options.filter_tags?
       tags_to_filter = options.filter_tags.split ','
-      @release_notes.select{ |l| tags_to_filter.any? { |t| tags_to_filter.include? t } }
+      @release_notes.select{ |l| l.tags.any? { |t| tags_to_filter.include? t } }
     else
       @release_notes
     end
@@ -90,19 +90,20 @@ class ReleaseNotesParser < Thor
   method_option :filter_tags, banner: "Specify a comma separated list of release note meta-tags to be included. See README for details"
   def list
     puts "# Listing release notes (#{options.sha} => HEAD)#{HR}"
-    @release_notes = git_log(options.sha).release_notes
+    @release_notes = git_log(options.sha).get(options)
     output = @release_notes.map{ |r|
       out = []
       if options.show_time?
-        out.push "    sha: #{r.sha} / time: #{DateTime.strptime(r.time,'%s')}`#{BLANK_LINE}"
-        out.push HR
+        out.push "**sha:** #{r.sha} / **time:** #{DateTime.strptime(r.time,'%s')}#{BLANK_LINE}"
       end
       if options.show_tags?
-        out.push "**tags:** _#{r.tags.join(', ')}_" unless r.tags.empty?
-        out.push HR
-      else
-        out.push r.note
+        out.push "**tags:** _#{r.tags.join(', ')}_#{BLANK_LINE}" unless r.tags.empty?
       end
+      if options.show_time? || options.show_tags?
+        out.push HR
+      end
+      out.push r.note, BLANK_LINE
+      out.join
     }.hr
     puts output
   end
