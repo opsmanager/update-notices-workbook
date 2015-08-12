@@ -17,44 +17,60 @@ friendly_require 'pry-byebug'
 friendly_require 'thor'
 friendly_require 'ostruct'
 
+
+BLANK_LINE = "\n\n"
+HR = "\n\n* * *\n\n"
+
 class Array
 
   def blank_line
-    self.join("\n\n")
+    self.join(BLANK_LINE)
   end
 
   def hr
-    self.join("\n\n* * *\n\n")
+    self.join(HR)
   end
 
 end
 
 class ReleaseLog
 
-  attr_accessor :log
+  attr_accessor :release_notes
 
-  def processed_log options = nil
-    unless options
-      @processed
+  def initialize text_log
+    @release_notes = build_release_notes(build_log(text_log))
+  end
+
+  def get options = nil
+    if options.filter_tags?
+      tags_to_filter = options.filter_tags.split ','
+      @release_notes.select{ |l| tags_to_filter.any? { |t| tags_to_filter.include? t } }
     else
-      @processed
+      @release_notes
     end
   end
 
-  def initialize json_log
-    @log = JSON.parse(json_log)
-    rx = /<%\s*release-note(\((.*?)\))?\s*(.*?)%>/m
-    @processed = @log.map { |l| OpenStruct.new({scans: l["b"].scan(rx), sha: l["sha"], time: l["t"]}) }
-      .reject { |o| o.scans.empty? }
-      .each { |o| make_release_notes o }
+  def build_log text
+    log_rx = /=====BEGIN===== *:sha: *(.*?) *:time: *(.*?) *:body: *(.*?) *=====END=====/m
+    log_matches = text.scan log_rx
+    log_matches.map{|i| OpenStruct.new(Hash[*(["sha", "time", "body"].zip i).flatten])}
   end
 
-  private
-
-  def make_release_notes o
-    o.release_notes = o.scans.map {|n| OpenStruct.new({note: n[2], tags: (n[1].split(',') rescue [])})}
+  def build_release_notes(log)
+    release_note_rx = /<%\s*release-note(\((.*?)\))?\s*(.*?)%>/m
+    tmp = []
+    log.each do |l|
+      l.rn_scans = l.body.scan(release_note_rx)
+      if l.rn_scans.empty?
+        tmp.push nil
+      else
+        tmp.push l.rn_scans.map {|n|
+          OpenStruct.new({sha: l.sha,  time: l.time, note: n[2], tags: (n[1].split(',') rescue [])})
+        }
+      end
+    end
+    tmp.compact.flatten
   end
-
 end
 
 class ReleaseNotesParser < Thor
@@ -71,34 +87,24 @@ class ReleaseNotesParser < Thor
   method_option :sha, banner: "Specify the SHA of the starting commit (parses log from SHA to HEAD on current branch)", required: true
   method_option :show_time, banner: "List release notes with SHA1 & time of commit", type: :boolean
   method_option :show_tags, banner: "List release notes showing their tags", type: :boolean
-  method_option :meta_tags, banner: "Specify a comma separated list of release note meta-tags to be included. See README for details"
-  # method_option :finishes, type: :boolean, banner: "list notes with a [Finishes] commit"
-  # method_option :hotfixes, type: :boolean, banner: "list notes with a [Hotfix] commit"
+  method_option :filter_tags, banner: "Specify a comma separated list of release note meta-tags to be included. See README for details"
   def list
-    # if options.finishes?
-    # end
-
-    # if options.hotfixes?
-    # end
-
-    puts "    Listing release notes (#{options.sha} => HEAD)\n"
-    @log = get_log(options.sha)
-    puts @log.processed_log(options).map{ |l|
+    puts "# Listing release notes (#{options.sha} => HEAD)#{HR}"
+    @release_notes = git_log(options.sha).release_notes
+    output = @release_notes.map{ |r|
       out = []
       if options.show_time?
-        out.push "    sha: #{l.sha} / time: #{DateTime.strptime(l.time,'%s')}`\n\n"
+        out.push "    sha: #{r.sha} / time: #{DateTime.strptime(r.time,'%s')}`#{BLANK_LINE}"
+        out.push HR
       end
       if options.show_tags?
-        out.push l.release_notes.map{|i|
-          rn = []
-          rn.push "**tags:** _#{i.tags.join(', ')}_" unless i.tags.empty?
-          rn.push i.note
-          rn.blank_line
-        }.hr
+        out.push "**tags:** _#{r.tags.join(', ')}_" unless r.tags.empty?
+        out.push HR
       else
-        out.push l.release_notes.map(&:note).hr
+        out.push r.note
       end
     }.hr
+    puts output
   end
 
   private
@@ -108,8 +114,8 @@ class ReleaseNotesParser < Thor
     %x(git --git-dir=#{@repo_path}/.git #{cmd})
   end
 
-  def get_log(a, b = 'HEAD')
-    ReleaseLog.new("[#{gitcmd(%Q(log #{a}..#{b} --pretty=format:"{\\\"sha\\\":\\\"%h\\\",\\\"t\\\":\\\"%at\\\",\\\"b\\\":\\\"%B\\\"},"))[0..-2].gsub("},\n{","},{").gsub("\n",'\\n')}]")
+  def git_log(a, b = 'HEAD')
+    ReleaseLog.new gitcmd %Q(log #{a}..#{b} --pretty=format:"=====BEGIN===== :sha: %h :time: %at :body: %B =====END=====")
   end
 
 end
